@@ -8,33 +8,36 @@
 using namespace std;
 
 IMAGE images[ALL]; //道具加载
+POS man; //小人中的位置
 
-struct _POS man; //小人中的位置
+/*******************************************
+*判断游戏是否胜利，如果不存在箱子目的地，就代表游戏结束了
+*输入：无
+*返回值：true - 游戏结束
+		 false - 游戏继续
+********************************************/
+bool isGameOver(void) {
+	for (int i = 0; i < MAP_LINE; i++) {
+		for (int j = 0; j < MAP_FILE; j++) {
+			if (map[i][j] == DES) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
 
-/*************************************
-**功能：游戏地图
-**含义：墙：0； 地板：1； 箱子的目的地：2；
-**		人物：3； 箱子：4； 箱子命中目标：5
-*************************************/
-int map[MAP_LINE][MAP_FILE]{
-{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-{ 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0 },
-{ 0, 1, 4, 1, 0, 2, 1, 0, 2, 1, 0, 0 },
-{ 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0 },
-{ 0, 1, 0, 2, 0, 1, 1, 4, 1, 1, 1, 0 },
-{ 0, 1, 1, 1, 0, 3, 1, 1, 1, 4, 1, 0 },
-{ 0, 1, 2, 1, 1, 4, 1, 1, 1, 1, 1, 0 },
-{ 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0 },
-{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-};
-
-//初始化界面背景
-void initialize(void) {
-	IMAGE backdrop;  //窗口背景图片
-	initgraph(WIDE, TALL);
-
-	loadimage(&backdrop, _T("blackground.bmp"), WIDE, TALL, true);
-	putimage(0, 0, &backdrop);
+/*******************************************
+*游戏结束场景，在玩家通过后显示
+*输入：bg - 背景图片变量的指针
+*返回值： 无
+********************************************/
+void GameOvercene(IMAGE *bg) {
+	putimage(0, 0, bg);
+	settextcolor(WHITE);
+	RECT rec = { 0, 0, WIDE, TALL };
+	settextstyle(20, 0, _T("宋体"));
+	drawtext(_T("恭喜您~ \n您终于成为了一个合格的搬箱子老司机！"), &rec, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
 /*******************************************
@@ -44,12 +47,16 @@ void initialize(void) {
 *		prop - 道具的类型
 *返回值：无
 ********************************************/
-void changeMap(int line, int column, enum PRORS prop) {
-	map[line][column] = prop;
-	putimage(X_OFFSET + column * PROPS_SIZE, Y_OFFSET + line * PROPS_SIZE, &images[prop]);
+void changeMap(POS *pos, PRORS prop) {
+	map[pos->x][pos->y] = prop;
+	putimage(X_OFFSET + pos->y * PROPS_SIZE, Y_OFFSET + pos->x * PROPS_SIZE, &images[prop]);
 }
 
-//加载道具图片
+/****************************
+*按照游戏地图的二维数组把道具加载上去
+*输入：无
+*返回值：无
+*****************************/
 void Map_initialization(void) {
 
 	loadimage(&images[WALL], _T("wall_right.bmp"), PROPS_SIZE, PROPS_SIZE, true);
@@ -70,44 +77,70 @@ void Map_initialization(void) {
 	}
 }
 
+/********************************************
+*实现游戏中人物的移动
+*输入：direct - 人物移动的枚举
+*返回值：无
+*********************************************/
+void gameControl(DIRECTION direct) {
 
-//实现游戏四个方向（上，下，左，右）
-void gameControl(enum _DIRECTION direct) {
-	int x = man.x;
-	int y = man.y;
-
-	struct _POS next_pos = man;
+	POS next_pos = man;
+	POS next_next_pos = man;
 	switch (direct){
 	case UP:
 		next_pos.x--;
+		next_next_pos.x -= 2;
 		break;
 	case DOWN:
 		next_pos.x++;
+		next_next_pos.x += 2;
 		break;
 	case LEFT:
 		next_pos.y--;
+		next_next_pos.y -= 2;
 		break;
 	case RIGHF:
 		next_pos.y++;
+		next_next_pos.y += 2;
 		break;
 	}
 
-		if (isValid(next_pos) && map[next_pos.x][next_pos.y] == FLOOR) {
-				changeMap(next_pos.x, next_pos.y, MAN);  //小人前进一格
-				changeMap(man.x, man.y, FLOOR);
+		if (isValid(next_pos) && map[next_pos.x][next_pos.y] == FLOOR) { //人的前方是地板
+			changeMap(&next_pos, MAN);  //小人前进一格
+			changeMap(&man, FLOOR);
+			man = next_pos;
+		} else if (isValid(next_next_pos) && map[next_pos.x][next_pos.y] == BOX) { //人的前方是箱子
+			//两种情况，箱子前面是地板或者是箱子目的地
+			if (map[next_next_pos.x][next_next_pos.y] == FLOOR) {
+				changeMap(&next_next_pos, BOX);
+				changeMap(&next_pos, MAN);
+				changeMap(&man, FLOOR);
 				man = next_pos;
+			} else if (map[next_next_pos.x][next_next_pos.y] == DES) {
+				changeMap(&next_next_pos, BOX_HIT);
+				changeMap(&next_pos, MAN);
+				changeMap(&man, FLOOR);
+				man = next_pos;
+				
+			}
 		}
-
 }
 
-//人物控制
-void man_control(void) {
+int main(void) {
+	IMAGE backdrop;  //窗口背景图片
+	initgraph(WIDE, TALL);
+
+	loadimage(&backdrop, _T("blackground.bmp"), WIDE, TALL, true);
+	putimage(0, 0, &backdrop);
+
+	Map_initialization();
+
 	bool quit = false;
 
 	do {
 		if (_kbhit()) { //玩家有按键
 			char ch = _getch();
-			
+
 			if (ch == KEY_UP) {
 				gameControl(UP);
 			} else if (ch == KEY_DOWN) {
@@ -119,17 +152,18 @@ void man_control(void) {
 			} else if (ch == KET_QUIT) {
 				quit = true;
 			}
+
+			if (isGameOver()) {
+				GameOvercene(&backdrop);
+				quit = true;
+			}
 		}
 		Sleep(100);
 	} while (!quit);
-}
-
-
-int main(void) {
-	initialize();
-	Map_initialization();
-	man_control();
 
 	system("pause");
+
+	//释放资源
+	closegraph();
 	return 0;
 }

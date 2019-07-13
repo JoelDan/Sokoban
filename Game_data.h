@@ -1,7 +1,5 @@
 #pragma once
 
-void gameControl(enum _DIRECTION direct);
-
 #define	WIDE		960		//窗口的宽
 #define	TALL		768		//窗口的高
 
@@ -19,7 +17,40 @@ void gameControl(enum _DIRECTION direct);
 #define KEY_RIGHF	'd'		//向右
 #define KET_QUIT	'q'		//退出
 
+//判断是否是个有效的地址
 #define isValid(next_pos) next_pos.x >= 0 && next_pos.x < MAP_LINE && next_pos.y >= 0 && next_pos.y < MAP_FILE
+
+typedef		enum PRORS			PRORS;
+typedef		enum _DIRECTION		DIRECTION;
+typedef		struct _POS			POS;
+
+/*************************************
+**功能：第一关游戏地图
+**含义：墙：0； 地板：1； 箱子的目的地：2；
+**		人物：3； 箱子：4； 箱子命中目标：5
+*************************************/
+int map[MAP_LINE][MAP_FILE]{
+{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+{ 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0 },
+{ 0, 1, 4, 1, 0, 2, 1, 0, 2, 1, 0, 0 },
+{ 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0 },
+{ 0, 1, 0, 2, 0, 1, 1, 4, 1, 1, 1, 0 },
+{ 0, 1, 1, 1, 0, 3, 1, 1, 1, 4, 1, 0 },
+{ 0, 1, 2, 1, 1, 4, 1, 1, 1, 1, 1, 0 },
+{ 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0 },
+{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+};
+
+int map2[8][8]{
+{ 0, 0, 0, 0, 0, 0, 0, 0 },
+{ 0, 0, 0, 2, 0, 0, 0, 0 },
+{ 0, 0, 0, 1, 0, 0, 0, 0 },
+{ 0, 0, 0, 4, 1, 1, 2, 0 },
+{ 0, 2, 1, 1, 1, 0, 0, 0 },
+{ 0, 0, 0, 0, 1, 0, 0, 0 },
+{ 0, 0, 0, 0, 1, 0, 0, 0 },
+{ 0, 0, 0, 0, 0, 0, 0, 0 }
+};
 
 enum PRORS {
 	WALL,	//墙
@@ -36,10 +67,10 @@ struct _POS {
 	int y;	//小人所在的二维数组的列
 };
 
+//人物移动
 enum _DIRECTION {
 	UP,
 	DOWN,
 	LEFT,
 	RIGHF
 };
-
